@@ -48,14 +48,6 @@ var (
 			Name:       "cluster",
 			Namespaced: true,
 		},
-		"clusterdefinition": {
-			Name:       "clusterdefinition",
-			Namespaced: false,
-		},
-		"clusterversion": {
-			Name:       "clusterversion",
-			Namespaced: false,
-		},
 	}
 
 	cmdVerbs = map[string][]string{

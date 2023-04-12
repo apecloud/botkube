@@ -34,18 +34,18 @@ securityContext:
 # -- Configures container security context.
 # [Ref doc](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container).
 containerSecurityContext:
-  privileged: false
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true
+  privileged: true
+  allowPrivilegeEscalation: true
+  readOnlyRootFilesystem: false
 
 # -- Role Based Access for Botkube Pod.
 # [Ref doc](https://kubernetes.io/docs/admin/authorization/rbac/).
 rbac:
   create: true
   rules:
-    - apiGroups: ["*"]
-      resources: ["*"]
-      verbs: ["get", "watch", "list"]
+    - apiGroups: [ "*" ]
+      resources: [ "*" ]
+      verbs: [ "*" ]
   staticGroupName: &static-group-name "botkube-plugins-default"
 
 ## Kubeconfig settings used by Botkube.
@@ -127,12 +127,12 @@ sources:
             prefix: ""
             static:
               # -- Name of group.rbac.authorization.k8s.io the plugin will be bound to.
-              values: [*static-group-name]
-          # user:
-            # type: Static
-            # -- Prefix that will be applied to .static.value[*].
-            # prefix: ""
-            # static:
+              values: [ *static-group-name ]
+              # user:
+              # type: Static
+              # -- Prefix that will be applied to .static.value[*].
+              # prefix: ""
+              # static:
               # -- Name of user.rbac.authorization.k8s.io the plugin will be bound to.
               # value: ""
       enabled: true
@@ -197,25 +197,25 @@ sources:
           # Skipped, if both include/exclude lists are empty.
           reason:
             # -- Include contains a list of allowed values. It can also contain regex expressions.
-            include: []
+            include: [ ]
             # -- Exclude contains a list of values to be ignored even if allowed by Include. It can also contain regex expressions.
             # Exclude list is checked before the Include list.
-            exclude: []
+            exclude: [ ]
           # -- Optional list of exact values or regex patterns to filter event by event message. Skipped, if both include/exclude lists are empty.
           # If a given event has multiple messages, it is considered a match if any of the messages match the constraints.
           message:
             # -- Include contains a list of allowed values. It can also contain regex expressions.
-            include: []
+            include: [ ]
             # -- Exclude contains a list of values to be ignored even if allowed by Include. It can also contain regex expressions.
             # Exclude list is checked before the Include list.
-            exclude: []
+            exclude: [ ]
 
         # -- Filters Kubernetes resources to watch by annotations. Each resource needs to have all the specified annotations.
         # Regex expressions are not supported.
-        annotations: {}
+        annotations: { }
         # -- Filters Kubernetes resources to watch by labels. Each resource needs to have all the specified labels.
         # Regex expressions are not supported.
-        labels: {}
+        labels: { }
 
         # -- Describes the Kubernetes resources to watch.
         # Resources are identified by its type in `{group}/{version}/{kind (plural)}` format. Examples: `apps/v1/deployments`, `v1/pods`.
@@ -224,31 +224,31 @@ sources:
         # @default -- See the `values.yaml` file for full object.
         resources:
           - type: v1/pods
-  #          namespaces:             # Overrides 'source'.kubernetes.namespaces
-  #            include:
-  #              - ".*"
-  #            exclude: []
-  #          annotations: {}         # Overrides 'source'.kubernetes.annotations
-  #          labels: {}              # Overrides 'source'.kubernetes.labels
-  #          # Optional resource name constraints.
-  #          name:
-  #            # Include contains a list of allowed values. It can also contain regex expressions.
-  #            include: []
-  #            # Exclude contains a list of values to be ignored even if allowed by Include. It can also contain regex expressions.
-  #            # Exclude list is checked before the Include list.
-  #            exclude: []
-  #          event:
-  #            # Overrides 'source'.kubernetes.event.reason
-  #            reason:
-  #              include: []
-  #              exclude: []
-  #            # Overrides 'source'.kubernetes.event.message
-  #            message:
-  #              include: []
-  #              exclude: []
-  #            # Overrides 'source'.kubernetes.event.types
-  #            types:
-  #              - create
+          #          namespaces:             # Overrides 'source'.kubernetes.namespaces
+          #            include:
+          #              - ".*"
+          #            exclude: []
+          #          annotations: {}         # Overrides 'source'.kubernetes.annotations
+          #          labels: {}              # Overrides 'source'.kubernetes.labels
+          #          # Optional resource name constraints.
+          #          name:
+          #            # Include contains a list of allowed values. It can also contain regex expressions.
+          #            include: []
+          #            # Exclude contains a list of values to be ignored even if allowed by Include. It can also contain regex expressions.
+          #            # Exclude list is checked before the Include list.
+          #            exclude: []
+          #          event:
+          #            # Overrides 'source'.kubernetes.event.reason
+          #            reason:
+          #              include: []
+          #              exclude: []
+          #            # Overrides 'source'.kubernetes.event.message
+          #            message:
+          #              include: []
+          #              exclude: []
+          #            # Overrides 'source'.kubernetes.event.types
+          #            types:
+          #              - create
 
           - type: v1/services
           - type: networking.k8s.io/v1/ingresses
@@ -309,23 +309,23 @@ sources:
               fields:
                 - spec.template.spec.containers[*].image
                 - status.readyReplicas
-         ## Custom resource example
-         # - type: velero.io/v1/backups
-         #   namespaces:
-         #     include:
-         #       - ".*"
-         #     exclude:
-         #       -
-         #   event:
-         #     types:
-         #       - create
-         #       - update
-         #       - delete
-         #       - error
-         #   updateSetting:
-         #     includeDiff: true
-         #     fields:
-         #       - status.phase
+          ## Custom resource example
+          # - type: velero.io/v1/backups
+          #   namespaces:
+          #     include:
+          #       - ".*"
+          #     exclude:
+          #       -
+          #   event:
+          #     types:
+          #       - create
+          #       - update
+          #       - delete
+          #       - error
+          #   updateSetting:
+          #     includeDiff: true
+          #     fields:
+          #       - status.phase
 
   'k8s-err-events':
     displayName: "Kubernetes Errors"
@@ -445,7 +445,7 @@ sources:
         # -- If set as true, Prometheus source plugin will not send alerts that is created before plugin start time.
         ignoreOldAlerts: true
         # -- Only the alerts that have state provided in this config will be sent as notification. https://pkg.go.dev/github.com/prometheus/prometheus/rules#AlertState
-        alertStates: ["firing", "pending", "inactive"]
+        alertStates: [ "firing", "pending", "inactive" ]
         # -- Logging configuration
         log:
           # -- Log level
@@ -507,7 +507,7 @@ executors:
         # Configures the default Namespace for executing Botkube `kbcli` commands. If not set, uses 'default'.
         defaultNamespace: "default"
         log:
-          level: info
+          level:debug
       context: *default-plugin-context
 
 # -- Custom aliases for given commands.
@@ -756,12 +756,12 @@ settings:
     startup:
       configMap:
         name: botkube-startup-config
-        annotations: {}
+        annotations: { }
       fileName: "_startup_state.yaml"
     runtime:
       configMap:
         name: botkube-runtime-config
-        annotations: {}
+        annotations: { }
       fileName: "_runtime_state.yaml"
 
 ## For using custom SSL certificates.
@@ -802,21 +802,21 @@ serviceMonitor:
   interval: 10s
   path: /metrics
   port: metrics
-  labels: {}
+  labels: { }
 
 ## Botkube Deployment.
 deployment:
   # -- Extra annotations to pass to the Botkube Deployment.
-  annotations: {}
+  annotations: { }
 
 # -- Number of Botkube pods to load balance between.
 # Currently, Botkube doesn't support HA.
 # @ignore
 replicaCount: 1
 # -- Extra annotations to pass to the Botkube Pod.
-extraAnnotations: {}
+extraAnnotations: { }
 # -- Extra labels to pass to the Botkube Pod.
-extraLabels: {}
+extraLabels: { }
 # -- Priority class name for the Botkube Pod.
 priorityClassName: ""
 
@@ -829,15 +829,15 @@ fullnameOverride: ""
 # choice for the user. This also increases chances charts run on environments with little
 # resources, such as Minikube.
 # [Ref docs](https://kubernetes.io/docs/user-guide/compute-resources/)
-resources: {}
+resources: { }
   ## If you do want to specify resources, uncomment the following lines,
   ## adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #  cpu: 100m
   #  memory: 128Mi
-  # requests:
-  #  cpu: 100m
-  #  memory: 128Mi
+# requests:
+#  cpu: 100m
+#  memory: 128Mi
 
 # -- Extra environment variables to pass to the Botkube container.
 # [Ref docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables).
@@ -855,7 +855,7 @@ extraEnv:
 
 # -- Extra volumes to pass to the Botkube container. Mount it later with extraVolumeMounts.
 # [Ref docs](https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/volume/#Volume).
-extraVolumes: []
+extraVolumes: [ ]
 # - name: extra-volume-0
 #   secret:
 #     secretName: {secret-name}
@@ -870,7 +870,7 @@ extraVolumes: []
 
 # -- Extra volume mounts to pass to the Botkube container.
 # [Ref docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#volumes-1).
-extraVolumeMounts: []
+extraVolumeMounts: [ ]
 # - name: extra-volume-0
 #   mountPath: /mnt/volume0
 #   readOnly: true
@@ -888,15 +888,15 @@ extraVolumeMounts: []
 
 # -- Node labels for Botkube Pod assignment.
 # [Ref doc](https://kubernetes.io/docs/user-guide/node-selection/).
-nodeSelector: {}
+nodeSelector: { }
 
 # -- Tolerations for Botkube Pod assignment.
 # [Ref doc](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/).
-tolerations: []
+tolerations: [ ]
 
 # -- Affinity for Botkube Pod assignment.
 # [Ref doc](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity).
-affinity: {}
+affinity: { }
 
 serviceAccount:
   # -- If true, a ServiceAccount is automatically created.
@@ -905,10 +905,10 @@ serviceAccount:
   # If not set, a name is generated using the fullname template.
   name: ""
   # -- Extra annotations for the ServiceAccount.
-  annotations: {}
+  annotations: { }
 
 # -- Extra Kubernetes resources to create. Helm templating is allowed as it is evaluated before creating the resources.
-extraObjects: []
+extraObjects: [ ]
 ## For example, to create a ClusterRoleBinding resource without creating a dedicated ClusterRole, uncomment the following snippet.
 ## NOTE: While running Helm install/upgrade with this sample snippet uncommented, make sure to set the following values:
 ##    1. `rbac.create: false`

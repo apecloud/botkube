@@ -96,6 +96,8 @@ spec:
           {{ end }}
             - name: cache
               mountPath: "/.kube/cache"
+            - name: kbcli-home
+              mountPath: "/.kbcli"
           env:
             - name: BOTKUBE_CONFIG_PATHS
               value: "/config/global_config.yaml,/config/comm_config.yaml,/config/{{ .Values.settings.persistentConfig.runtime.fileName}},/startup-config/{{ .Values.settings.persistentConfig.startup.fileName}}"
@@ -200,6 +202,8 @@ spec:
             {{- end }}
       {{ end }}
         - name: cache
+          emptyDir: {}
+        - name: kbcli-home
           emptyDir: {}
       {{- if .Values.securityContext }}
       securityContext:

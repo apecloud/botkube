@@ -253,6 +253,18 @@ func (e *Kbcli) renderMessage(ctx context.Context, stateDetails stateDetails, al
 		nsNames  = e.tryToGetNamespaceSelect(ctx, stateDetails)
 	)
 
+	if resNames == nil {
+		// we must zero those fields as they are known only if we know the resource type and this cmd doesn't have one :)
+		stateDetails.resourceName = ""
+		stateDetails.namespace = ""
+		preview := e.buildCommandPreview(stateDetails)
+		return KbcliCmdBuilderMessage(
+			stateDetails.dropdownsBlockID, *allCmdsSelect,
+			WithAdditionalSelects(matchingVerbs),
+			WithAdditionalSections(preview...),
+		), nil
+	}
+
 	// 4. If a given resource name is not on the list anymore, clear it.
 	if !e.contains(resNames, stateDetails.resourceName) {
 		stateDetails.resourceName = ""
@@ -282,8 +294,7 @@ func (e *Kbcli) tryToGetResourceNamesSelect(ctx context.Context, state stateDeta
 	// get resource type for the given cmd
 	resourceType := e.commandGuard.GetResourceTypeForCmd(state.cmd)
 	if resourceType == "" {
-		e.log.Info("Return empty resource name")
-		return EmptyResourceNameDropdown()
+		return nil
 	}
 
 	cmd := fmt.Sprintf(`get %s --ignore-not-found=true -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'`, resourceType)
@@ -425,9 +436,11 @@ func (e *Kbcli) contains(matchingTypes *api.Select, resourceType string) bool {
 }
 
 func (e *Kbcli) buildCommandPreview(state stateDetails) []api.Section {
-	if state.resourceName == "" {
-		// we should not render the command as it will be invalid anyway without the resource name
-		return nil
+	cmd := fmt.Sprintf("%s %s %s", kbcliCommandName, state.cmd, state.verb)
+
+	resourceNameSeparator := " "
+	if state.resourceName != "" {
+		cmd = fmt.Sprintf("%s%s%s", cmd, resourceNameSeparator, state.resourceName)
 	}
 
 	resourceDetails, err := e.commandGuard.GetResourceDetails(state.cmd)
@@ -437,13 +450,6 @@ func (e *Kbcli) buildCommandPreview(state stateDetails) []api.Section {
 			"error": err.Error(),
 		}).Error("Cannot get resource details")
 		return []api.Section{InternalErrorSection()}
-	}
-
-	cmd := fmt.Sprintf("%s %s %s", kbcliCommandName, state.cmd, state.verb)
-
-	resourceNameSeparator := " "
-	if state.resourceName != "" {
-		cmd = fmt.Sprintf("%s%s%s", cmd, resourceNameSeparator, state.resourceName)
 	}
 
 	if resourceDetails.Namespaced && state.namespace != "" {
