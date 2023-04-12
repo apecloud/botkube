@@ -22,7 +22,7 @@ func main() {
 		BinariesDirectory: binDir,
 		Server: fake.PluginServer{
 			Host: host,
-			Port: 3000,
+			Port: 8080,
 		},
 	})
 

@@ -500,6 +500,16 @@ executors:
       #      resources: [ "deployments", "pods", "namespaces", "daemonsets", "statefulsets", "storageclasses", "nodes", "configmaps", "services", "ingresses", "replicasets", "secrets", "cronjobs", "jobs" ]
       context: *default-plugin-context
 
+    ## kbcli executor configuration
+    botkube/kbcli:
+      enabled: false
+      config:
+        # Configures the default Namespace for executing Botkube `kbcli` commands. If not set, uses 'default'.
+        defaultNamespace: "default"
+        log:
+          level: info
+      context: *default-plugin-context
+
 # -- Custom aliases for given commands.
 # The aliases are replaced with the underlying command before executing it.
 # Aliases can replace a single word or multiple ones. For example, you can define a `k` alias for `kubectl`, or `kgp` for `kubectl get pods`.
@@ -513,6 +523,10 @@ aliases:
   k:
     command: kubectl
     displayName: "Kubectl alias"
+  kb:
+    command: kbcli
+    displayName: "kbcli alias"
+
 ## Multi-word alias example:
 #  kgp:
 #    command: kubectl get pods

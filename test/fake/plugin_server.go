@@ -12,7 +12,7 @@ import (
 	"github.com/kubeshop/botkube/internal/plugin"
 )
 
-const indexFileEndpoint = "/botkube.yaml"
+const indexFileEndpoint = "/plugins-index.yaml"
 
 type (
 	// PluginConfig holds configuration for fake plugin server.
@@ -24,7 +24,7 @@ type (
 	// PluginServer holds configuration for HTTP plugin server.
 	PluginServer struct {
 		Host string `envconfig:"default=http://host.k3d.internal"`
-		Port int    `envconfig:"default=3000"`
+		Port int    `envconfig:"default=8080"`
 	}
 )
 

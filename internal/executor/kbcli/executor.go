@@ -1,0 +1,173 @@
+package kbcli
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/kubeshop/botkube/internal/executor/kbcli/accessreview"
+	"github.com/kubeshop/botkube/internal/executor/kbcli/builder"
+	"github.com/kubeshop/botkube/internal/executor/kbcli/command"
+	"github.com/kubeshop/botkube/internal/executor/kbcli/logger"
+	"github.com/kubeshop/botkube/pkg/api"
+	"github.com/kubeshop/botkube/pkg/api/executor"
+	"github.com/kubeshop/botkube/pkg/pluginx"
+)
+
+const (
+	// PluginName is the name of the Helm Botkube plugin.
+	PluginName       = "kbcli"
+	defaultNamespace = "default"
+	description      = "Run the KubeBlocks CLI commands directly from your favorite communication platform."
+)
+
+var kbcliBinaryDownloadLinks = map[string]string{
+	"darwin/amd64":  "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//darwin-amd64",
+	"darwin/arm64":  "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-arm64-v0.4.0.tar.gz//darwin-arm64",
+	"linux/amd64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//linux-amd64",
+	"linux/arm64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//linux-arm64",
+	"windows/amd64": "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//windows-amd64",
+}
+
+var kcBinaryDownloadLinks = map[string]string{
+	"windows/amd64": "https://dl.k8s.io/release/v1.26.0/bin/windows/amd64/kubectl.exe",
+	"darwin/amd64":  "https://dl.k8s.io/release/v1.26.0/bin/darwin/amd64/kubectl",
+	"darwin/arm64":  "https://dl.k8s.io/release/v1.26.0/bin/darwin/arm64/kubectl",
+	"linux/amd64":   "https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl",
+	"linux/s390x":   "https://dl.k8s.io/release/v1.26.0/bin/linux/s390x/kubectl",
+	"linux/ppc64le": "https://dl.k8s.io/release/v1.26.0/bin/linux/ppc64le/kubectl",
+	"linux/arm64":   "https://dl.k8s.io/release/v1.26.0/bin/linux/arm64/kubectl",
+	"linux/386":     "https://dl.k8s.io/release/v1.26.0/bin/linux/386/kubectl",
+}
+
+var _ executor.Executor = &Executor{}
+
+type (
+	kcRunner interface {
+		RunKubectlCommand(ctx context.Context, kubeConfigPath, defaultNamespace, cmd string) (string, error)
+	}
+
+	kbRunner interface {
+		RunKbcliCommand(ctx context.Context, kubeConfigPath, defaultNamespace, cmd string) (string, error)
+	}
+)
+
+// Executor provides functionality for running Helm CLI.
+type Executor struct {
+	pluginVersion string
+
+	// kcRunner is a kubectl runner
+	kcRunner kcRunner
+
+	// kbRunner is a kbcli runner
+	kbRunner kbRunner
+}
+
+// NewExecutor returns a new Executor instance.
+func NewExecutor(ver string, kcRunner kcRunner, kbRunner kbRunner) *Executor {
+	return &Executor{
+		pluginVersion: ver,
+		kcRunner:      kcRunner,
+		kbRunner:      kbRunner,
+	}
+}
+
+// Metadata returns details about Helm plugin.
+func (e *Executor) Metadata(context.Context) (api.MetadataOutput, error) {
+	return api.MetadataOutput{
+		Version:     e.pluginVersion,
+		Description: description,
+		JSONSchema:  jsonSchema(description),
+		Dependencies: map[string]api.Dependency{
+			kbBinaryName: {
+				URLs: kbcliBinaryDownloadLinks,
+			},
+			kcBinaryName: {
+				URLs: kcBinaryDownloadLinks,
+			},
+		},
+	}, nil
+}
+
+// Execute returns a given command as response.
+func (e *Executor) Execute(ctx context.Context, in executor.ExecuteInput) (executor.ExecuteOutput, error) {
+	cfg, err := MergeConfigs(in.Configs)
+	if err != nil {
+		return executor.ExecuteOutput{}, fmt.Errorf("while merging input configs: %w", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return executor.ExecuteOutput{}, fmt.Errorf("while validating configuration: %w", err)
+	}
+
+	log := logger.New(cfg.Log)
+
+	cmd, err := normalizeCommand(in.Command)
+	if err != nil {
+		return executor.ExecuteOutput{}, err
+	}
+
+	if builder.ShouldHandle(cmd) {
+		guard, k8sCli, err := getBuilderDependencies(log, os.Getenv("KUBECONFIG")) // TODO: take kubeconfig from execution context
+		if err != nil {
+			return executor.ExecuteOutput{}, fmt.Errorf("while creating builder dependecies: %w", err)
+		}
+
+		kbBuilder := builder.NewKbcli(e.kcRunner, cfg.InteractiveBuilder, log, guard, cfg.DefaultNamespace, k8sCli.CoreV1().Namespaces(), accessreview.NewK8sAuth(k8sCli.AuthorizationV1()))
+		msg, err := kbBuilder.Handle(ctx, cmd, in.Context.IsInteractivitySupported, in.Context.SlackState)
+		if err != nil {
+			return executor.ExecuteOutput{}, fmt.Errorf("while running command builder: %w", err)
+		}
+
+		return executor.ExecuteOutput{
+			Message: msg,
+		}, nil
+	}
+
+	kubeConfigPath, deleteFn, err := pluginx.PersistKubeConfig(ctx, in.Context.KubeConfig)
+	if err != nil {
+		return executor.ExecuteOutput{}, fmt.Errorf("while writing kubeconfig file: %w", err)
+	}
+	defer func() {
+		if deleteErr := deleteFn(ctx); deleteErr != nil {
+			log.Errorf("failed to delete kubeconfig file %s: %w", kubeConfigPath, deleteErr)
+		}
+	}()
+
+	out, err := e.kbRunner.RunKbcliCommand(ctx, kubeConfigPath, cfg.DefaultNamespace, cmd)
+	if err != nil {
+		return executor.ExecuteOutput{}, err
+	}
+	return executor.ExecuteOutput{
+		Message: api.NewCodeBlockMessage(out, true),
+	}, nil
+}
+
+// Help returns help message.
+func (*Executor) Help(context.Context) (api.Message, error) {
+	return api.NewCodeBlockMessage(help(), true), nil
+}
+
+func getBuilderDependencies(log logrus.FieldLogger, kubeconfig string) (*command.CommandGuard, *kubernetes.Clientset, error) {
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("while creating kube config: %w", err)
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("while creating discovery client: %w", err)
+	}
+	guard := command.NewCommandGuard(log, discoveryClient)
+	k8sCli, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("while creating typed k8s client: %w", err)
+	}
+
+	return guard, k8sCli, nil
+}

@@ -84,5 +84,21 @@ builds:
     goarch: *goarch
     goarm: *goarm
 
+  - id: kbcli
+    main: cmd/kbcli/main.go
+    binary: executor_kbcli_{{ .Os }}_{{ .Arch }}
+
+    no_unique_dist_dir: true
+    env: &env
+      - CGO_ENABLED=0
+    goos: &goos
+      - linux
+      - darwin
+    goarch: &goarch
+      - amd64
+      - arm64
+    goarm: &goarm
+      - 7
+
 snapshot:
   name_template: 'v{{ .Version }}'
