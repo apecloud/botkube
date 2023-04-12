@@ -29,9 +29,9 @@ const (
 var kbcliBinaryDownloadLinks = map[string]string{
 	"darwin/amd64":  "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//darwin-amd64",
 	"darwin/arm64":  "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-arm64-v0.4.0.tar.gz//darwin-arm64",
-	"linux/amd64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//linux-amd64",
-	"linux/arm64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//linux-arm64",
-	"windows/amd64": "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-darwin-amd64-v0.4.0.tar.gz//windows-amd64",
+	"linux/amd64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-linux-amd64-v0.4.0.tar.gz//linux-amd64",
+	"linux/arm64":   "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-linux-arm64-v0.4.0.tar.gz//linux-arm64",
+	"windows/amd64": "https://github.com/apecloud/kbcli/releases/download/v0.4.0/kbcli-windows-amd64-v0.4.0.tar.gz//windows-amd64",
 }
 
 var kcBinaryDownloadLinks = map[string]string{

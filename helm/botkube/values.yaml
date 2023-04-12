@@ -502,7 +502,7 @@ executors:
 
     ## kbcli executor configuration
     botkube/kbcli:
-      enabled: false
+      enabled: true
       config:
         # Configures the default Namespace for executing Botkube `kbcli` commands. If not set, uses 'default'.
         defaultNamespace: "default"
@@ -960,12 +960,12 @@ configWatcher:
 # -- Configuration for Botkube executors and sources plugins.
 plugins:
   # -- Directory, where downloaded plugins are cached.
-  cacheDir: "/tmp"
+  cacheDir: "/tmp/plugins"
   # -- List of plugins repositories.
   repositories:
     # -- This repository serves officially supported Botkube plugins.
     botkube:
-      url: https://github.com/kubeshop/botkube/releases/download/v9.99.9-dev/plugins-index.yaml
+      url: https://github.com/apecloud/botkube/releases/download/v0.1.0/plugins-index.yaml
 
 # -- Configuration for synchronizing Botkube configuration.
 config:
